@@ -2,13 +2,13 @@
 #define SURF_H_
 
 #include <string>
-#include <vector>
 #include <type_traits>
+#include <vector>
 
-#include "config.hpp"
-#include "fst_builder.hpp"
-#include "louds_dense.hpp"
-#include "louds_sparse.hpp"
+#include "include/config.hpp"
+#include "include/fst_builder.hpp"
+#include "include/louds_dense.hpp"
+#include "include/louds_sparse.hpp"
 
 namespace fst {
 
@@ -70,12 +70,11 @@ class FST {
     create(keys, values, kIncludeDense, kSparseDenseRatio);
   }
 
-  FST(const std::vector<uint64_t> &keys,
-      const std::vector<uint64_t> &values) {
+  FST(const std::vector<uint64_t> &keys, const std::vector<uint64_t> &values) {
     std::vector<std::string> transformed_keys;
     transformed_keys.reserve(keys.size());
 
-    for (auto key: keys) {
+    for (auto key : keys) {
       uint64_t endian_swapped_word = __builtin_bswap64(key);
       transformed_keys.emplace_back(
           std::string(reinterpret_cast<const char *>(&endian_swapped_word), 8));
@@ -83,12 +82,11 @@ class FST {
     create(transformed_keys, values, kIncludeDense, kSparseDenseRatio);
   }
 
-  FST(const std::vector<uint32_t> &keys,
-      const std::vector<uint64_t> &values) {
+  FST(const std::vector<uint32_t> &keys, const std::vector<uint64_t> &values) {
     std::vector<std::string> transformed_keys;
     transformed_keys.reserve(keys.size());
 
-    for (auto key: keys) {
+    for (auto key : keys) {
       uint32_t endian_swapped_word = __builtin_bswap32(key);
       transformed_keys.emplace_back(
           std::string(reinterpret_cast<const char *>(&endian_swapped_word), 4));
@@ -113,17 +111,23 @@ class FST {
 
   bool lookupKey(uint64_t key, uint64_t &value) const;
 
-  // this function is used by hybrid trie to continue a search started in ARTHybrid
-  inline bool lookupKeyAtNode(const char* key, uint64_t key_length, level_t level, size_t node_number, uint64_t& value) const;
+  // this function is used by hybrid trie to continue a search started in
+  // ARTHybrid
+  inline bool lookupKeyAtNode(const char *key, uint64_t key_length,
+                              level_t level, size_t node_number,
+                              uint64_t &value) const;
 
-  // this function is used by hybrid trie to execute one lookup step in AMAC setting
-  // returns true if next nodenumber is found or lookup finished
-  // returns false if this key does not exist
-  inline bool amacLookup(const char keyByte, level_t level, size_t &node_number) const;
+  // this function is used by hybrid trie to execute one lookup step in AMAC
+  // setting returns true if next nodenumber is found or lookup finished returns
+  // false if this key does not exist
+  inline bool amacLookup(const char keyByte, level_t level,
+                         size_t &node_number) const;
 
-  void getNode(level_t level, size_t node_number, std::vector<uint8_t> &lables, std::vector<uint64_t> &values, std::vector<uint8_t> &prefix) const;
+  void getNode(level_t level, size_t node_number, std::vector<uint8_t> &lables,
+               std::vector<uint64_t> &values,
+               std::vector<uint8_t> &prefix) const;
 
-  uint64_t lookupNodeNum(const char* key, uint64_t key_length) const;
+  uint64_t lookupNodeNum(const char *key, uint64_t key_length) const;
 
   // This function searches in a conservative way: if inclusive is true
   // and the stored key prefix matches key, iter stays at this key prefix.
@@ -154,7 +158,7 @@ class FST {
     char *cur_data = data;
     louds_dense_->serialize(cur_data);
     louds_sparse_->serialize(cur_data);
-    assert(cur_data - data == (int64_t) size);
+    assert(cur_data - data == (int64_t)size);
     return data;
   }
 
@@ -223,35 +227,40 @@ bool FST::lookupKey(const std::string &key, uint64_t &value) const {
   return true;
 }
 
-uint64_t FST::lookupNodeNum(const char* key, uint64_t key_length) const {
-    position_t node_num = 0;
-    if (louds_dense_->lookupNodeNumber(key, key_length, node_num))
-      if (key_length >= louds_sparse_->getStartLevel())
-        louds_sparse_->lookupNodeNumber(key, key_length, node_num);
-    return node_num;
+uint64_t FST::lookupNodeNum(const char *key, uint64_t key_length) const {
+  position_t node_num = 0;
+  if (louds_dense_->lookupNodeNumber(key, key_length, node_num))
+    if (key_length >= louds_sparse_->getStartLevel())
+      louds_sparse_->lookupNodeNumber(key, key_length, node_num);
+  return node_num;
 };
 
-inline bool FST::lookupKeyAtNode(const char* key, uint64_t key_length, level_t level, size_t node_number, uint64_t& value) const {
-    if (level < getSparseStartLevel()) { // start lookup in LoudsDense
-        if (!louds_dense_->lookupKeyAtNode(key, key_length, level, node_number, value)) {
-          return false; // key not immanent in LoudsDense
-        }
-        else if (node_number != 0) {
-            // continue lookup in LoudsSparse at sparse startlevel
-            return louds_sparse_->lookupKeyAtNode(key, key_length, node_number, value, getSparseStartLevel());
-        }
-        return true;
+inline bool FST::lookupKeyAtNode(const char *key, uint64_t key_length,
+                                 level_t level, size_t node_number,
+                                 uint64_t &value) const {
+  if (level < getSparseStartLevel()) {  // start lookup in LoudsDense
+    if (!louds_dense_->lookupKeyAtNode(key, key_length, level, node_number,
+                                       value)) {
+      return false;  // key not immanent in LoudsDense
+    } else if (node_number != 0) {
+      // continue lookup in LoudsSparse at sparse startlevel
+      return louds_sparse_->lookupKeyAtNode(key, key_length, node_number, value,
+                                            getSparseStartLevel());
     }
-    // start lookup in LoudsSparse at level and nodenumber
-    return  louds_sparse_->lookupKeyAtNode(key, key_length, node_number, value, level);
+    return true;
+  }
+  // start lookup in LoudsSparse at level and nodenumber
+  return louds_sparse_->lookupKeyAtNode(key, key_length, node_number, value,
+                                        level);
 }
 
 // store result in node_number when it gets found
-inline bool FST::amacLookup(const char keyByte, level_t level, size_t &node_number) const {
-  if (level < getSparseStartLevel()) { // lookup in LoudsDense
+inline bool FST::amacLookup(const char keyByte, level_t level,
+                            size_t &node_number) const {
+  if (level < getSparseStartLevel()) {  // lookup in LoudsDense
     return louds_dense_->findNextNodeOrValue(keyByte, node_number);
 
-  } else { // lookup in LoudsSparse
+  } else {  // lookup in LoudsSparse
     return louds_sparse_->findNextNodeOrValue(keyByte, node_number);
   }
 }
@@ -260,15 +269,20 @@ inline bool FST::amacLookup(const char keyByte, level_t level, size_t &node_numb
 /// leaf node or has at least two branches
 /// It recursively goes down if a node has only one label and stores these
 /// in prefixLabels
-void FST::getNode(level_t level, size_t node_number, std::vector<uint8_t> &lables, std::vector<uint64_t> &values, std::vector<uint8_t> &prefixLabels) const {
-  while (level < getSparseStartLevel() && !louds_dense_->nodeHasMultipleBranchesOrTerminates(node_number, level,prefixLabels)) {
+void FST::getNode(level_t level, size_t node_number,
+                  std::vector<uint8_t> &lables, std::vector<uint64_t> &values,
+                  std::vector<uint8_t> &prefixLabels) const {
+  while (level < getSparseStartLevel() &&
+         !louds_dense_->nodeHasMultipleBranchesOrTerminates(node_number, level,
+                                                            prefixLabels)) {
     level++;
   }
-  if (level < getSparseStartLevel()) { // get node from louds_dense_
+  if (level < getSparseStartLevel()) {  // get node from louds_dense_
     louds_dense_->getNode(node_number, lables, values);
-  }
-  else { // continue traversing in louds_sparse_ until node is found that is a leaf or that has at least two labels
-    while (!louds_sparse_->nodeHasMultipleBranchesOrTerminates(node_number, level, prefixLabels)) {
+  } else {  // continue traversing in louds_sparse_ until node is found that is
+            // a leaf or that has at least two labels
+    while (!louds_sparse_->nodeHasMultipleBranchesOrTerminates(
+        node_number, level, prefixLabels)) {
       level++;
     }
     // get node from louds_sparse_
@@ -307,7 +321,7 @@ FST::Iter FST::moveToKeyLessThan(const std::string &key,
     iter = moveToLast();
     return iter;
   }
-  //if (!iter.getFpFlag()) {
+  // if (!iter.getFpFlag()) {
   //  iter--;
   //  uint64_t value = 0;
   //  if (lookupKey(key, value)) iter--;
@@ -358,8 +372,8 @@ std::pair<FST::Iter, FST::Iter> FST::lookupRange(const std::string &left_key,
     if (end_iter.isValid()) {
       // move the iterator only in the case that right_key has been found
       auto tid = end_iter.getValue();
-      //todo there is no reference to keys vector anymore
-      //if ((*keys_)[tid] == right_key) {
+      // todo there is no reference to keys vector anymore
+      // if ((*keys_)[tid] == right_key) {
       //  end_iter++;
       //}
     }
@@ -379,7 +393,7 @@ uint64_t FST::serializedSize() const {
 
 uint64_t FST::getMemoryUsage() const {
   return (sizeof(FST) + louds_dense_->getMemoryUsage() +
-      louds_sparse_->getMemoryUsage());
+          louds_sparse_->getMemoryUsage());
 }
 
 level_t FST::getHeight() const { return louds_sparse_->getHeight(); }
@@ -397,7 +411,7 @@ void FST::Iter::clear() {
 
 bool FST::Iter::isValid() const {
   return dense_iter_.isValid() &&
-      (dense_iter_.isComplete() || sparse_iter_.isValid());
+         (dense_iter_.isComplete() || sparse_iter_.isValid());
 }
 
 int FST::Iter::compare(const std::string &key) const {
@@ -496,7 +510,7 @@ bool FST::Iter::operator!=(const FST::Iter &other) {
 
   // dense is equal, check sparse levels now
   return this->sparse_iter_.getLastIteratorPosition() !=
-      other.sparse_iter_.getLastIteratorPosition();
+         other.sparse_iter_.getLastIteratorPosition();
 }
 }  // namespace fst
 
