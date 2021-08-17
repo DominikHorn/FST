@@ -14,3 +14,9 @@ target_compile_options(${PROJECT_NAME} INTERFACE -mpopcnt -pthread)
 
 # Make IDE friendly
 target_sources(${PROJECT_NAME} INTERFACE fst.hpp include/)
+
+# Test code
+get_directory_property(hasParent PARENT_DIRECTORY)
+if (NOT hasParent)
+  add_subdirectory(src)
+endif()

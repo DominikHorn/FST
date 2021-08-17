@@ -24,7 +24,7 @@ class Bitvector {
                           end_level);
   }
 
-  ~Bitvector() = default;
+  virtual ~Bitvector() = default;
 
   position_t numBits() const { return num_bits_; }
 
@@ -95,12 +95,15 @@ position_t Bitvector::distanceToNextSetBit(const position_t pos) const {
   return distance;
 }
 
-size_t Bitvector::getNumSetBitsInDenseNode(position_t nodeNumber, unsigned &label) const {
+size_t Bitvector::getNumSetBitsInDenseNode(position_t nodeNumber,
+                                           unsigned &label) const {
   int setBits = 0;
   for (auto i = 0; i < 4; i++) {
-    setBits += __builtin_popcountll(bits_[nodeNumber * (kFanout / kWordSize) + i]);
+    setBits +=
+        __builtin_popcountll(bits_[nodeNumber * (kFanout / kWordSize) + i]);
     if (bits_[nodeNumber * (kFanout / kWordSize) + i] > 0) {
-     label = __builtin_clz(bits_[nodeNumber * (kFanout / kWordSize) + i] > 0) + kWordSize * i;
+      label = __builtin_clz(bits_[nodeNumber * (kFanout / kWordSize) + i] > 0) +
+              kWordSize * i;
     }
   }
   return setBits;

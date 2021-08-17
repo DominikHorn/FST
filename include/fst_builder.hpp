@@ -12,11 +12,11 @@ namespace fst {
 
 class FSTBuilder {
  public:
-  FSTBuilder() : sparse_start_level_(0) {};
+  FSTBuilder() : sparse_start_level_(0){};
   explicit FSTBuilder(bool include_dense, uint32_t sparse_dense_ratio)
       : include_dense_(include_dense),
         sparse_dense_ratio_(sparse_dense_ratio),
-        sparse_start_level_(0) {};
+        sparse_start_level_(0){};
 
   ~FSTBuilder() = default;
 
@@ -24,8 +24,7 @@ class FSTBuilder {
   // through a single scan of the sorted key list.
   // After build, the member vectors are used in FST constructor.
   // REQUIRED: provided key list must be sorted.
-  void build(const std::vector<std::string> &keys,
-             const std::vector<uint64_t> &values);
+  void build(const std::vector<std::string> &keys);
 
   static bool readBit(const std::vector<word_t> &bits, const position_t pos) {
     assert(pos < (bits.size() * kWordSize));
@@ -75,8 +74,7 @@ class FSTBuilder {
 
   // Fill in the LOUDS-Sparse vectors through a single scan
   // of the sorted key list.
-  void buildSparse(const std::vector<std::string> &keys,
-                   const std::vector<uint64_t> &values);
+  void buildSparse(const std::vector<std::string> &keys);
 
   // Walks down the current partially-filled trie by comparing key to
   // its previous key in the list until their prefixes do not match.
@@ -99,8 +97,8 @@ class FSTBuilder {
   inline bool isCharCommonPrefix(label_t c, level_t level) const;
   inline bool isLevelEmpty(level_t level) const;
   inline void moveToNextItemSlot(level_t level);
-  void insertKeyByte(char c, level_t level,
-                     bool is_start_of_node, bool is_term);
+  void insertKeyByte(char c, level_t level, bool is_start_of_node,
+                     bool is_term);
 
   // Compute sparse_start_level_ according to the pre-defined
   // size ratio between Sparse and Dense levels.
@@ -116,8 +114,7 @@ class FSTBuilder {
   void buildDense();
 
   void initDenseVectors(level_t level);
-  void setLabelAndChildIndicatorBitmap(level_t level,
-                                       position_t node_num,
+  void setLabelAndChildIndicatorBitmap(level_t level, position_t node_num,
                                        position_t pos);
 
   position_t getNumItems(level_t level) const;
@@ -151,25 +148,22 @@ class FSTBuilder {
   std::vector<bool> is_last_item_terminator_;
 };
 
-void FSTBuilder::build(const std::vector<std::string> &keys,
-                       const std::vector<uint64_t> &values) {
+void FSTBuilder::build(const std::vector<std::string> &keys) {
   assert(keys.size() > 0);
-  buildSparse(keys, values);
+  buildSparse(keys);
   if (include_dense_) {
     determineCutoffLevel();
     buildDense();
   }
 }
 
-void FSTBuilder::buildSparse(const std::vector<std::string> &keys,
-                             const std::vector<uint64_t> &values) {
+void FSTBuilder::buildSparse(const std::vector<std::string> &keys) {
   for (position_t i = 0; i < keys.size(); i++) {
     level_t level = skipCommonPrefix(keys[i]);
     position_t curpos = i;
     while ((i + 1 < keys.size()) && isSameKey(keys[curpos], keys[i + 1])) i++;
     if (i < keys.size() - 1)
-      insertKeyBytesToTrieUntilUnique(keys[curpos], curpos, keys[i + 1],
-                                      level);
+      insertKeyBytesToTrieUntilUnique(keys[curpos], curpos, keys[i + 1], level);
     else  // for last key, there is no successor key in the list
       insertKeyBytesToTrieUntilUnique(keys[curpos], curpos, std::string(),
                                       level);
@@ -179,18 +173,17 @@ void FSTBuilder::buildSparse(const std::vector<std::string> &keys,
 level_t FSTBuilder::skipCommonPrefix(const std::string &key) {
   level_t level = 0;
   while (level < key.length() &&
-      isCharCommonPrefix((label_t) key[level], level)) {
+         isCharCommonPrefix((label_t)key[level], level)) {
     setBit(child_indicator_bits_[level], getNumItems(level) - 1);
     level++;
   }
   return level;
 }
 
-level_t FSTBuilder::insertKeyBytesToTrieUntilUnique(
-    const std::string &key,
-    const uint64_t position,
-    const std::string &next_key,
-    const level_t start_level) {
+level_t FSTBuilder::insertKeyBytesToTrieUntilUnique(const std::string &key,
+                                                    const uint64_t position,
+                                                    const std::string &next_key,
+                                                    const level_t start_level) {
   assert(start_level < key.length());
 
   level_t level = start_level;
@@ -206,8 +199,8 @@ level_t FSTBuilder::insertKeyBytesToTrieUntilUnique(
   insertKeyByte(key[level], level, is_start_of_node, is_term);
   level++;
 
-  if (level > next_key.length()
-      || !isSameKey(key.substr(0, level), next_key.substr(0, level))) {
+  if (level > next_key.length() ||
+      !isSameKey(key.substr(0, level), next_key.substr(0, level))) {
     positions_[level - 1].emplace_back(position);
     return level;
   }
@@ -215,8 +208,8 @@ level_t FSTBuilder::insertKeyBytesToTrieUntilUnique(
   // All the following bytes inserted must be the start of a new node.
   is_start_of_node = true;
 
-  while (level < key.length() && level < next_key.length()
-      && key[level - 1] == next_key[level - 1]) {
+  while (level < key.length() && level < next_key.length() &&
+         key[level - 1] == next_key[level - 1]) {
     insertKeyByte(key[level], level, is_start_of_node, is_term);
     level++;
   }
@@ -227,7 +220,7 @@ level_t FSTBuilder::insertKeyBytesToTrieUntilUnique(
 inline bool FSTBuilder::isCharCommonPrefix(const label_t c,
                                            const level_t level) const {
   return (level < getTreeHeight()) && (!is_last_item_terminator_[level]) &&
-      (c == labels_[level].back());
+         (c == labels_[level].back());
 }
 
 inline bool FSTBuilder::isLevelEmpty(const level_t level) const {
@@ -270,7 +263,7 @@ inline void FSTBuilder::determineCutoffLevel() {
   uint64_t dense_mem = computeDenseMem(cutoff_level);
   uint64_t sparse_mem = computeSparseMem(cutoff_level);
   while ((cutoff_level < getTreeHeight()) &&
-      (dense_mem * sparse_dense_ratio_ < sparse_mem)) {
+         (dense_mem * sparse_dense_ratio_ < sparse_mem)) {
     cutoff_level++;
     dense_mem = computeDenseMem(cutoff_level);
     sparse_mem = computeSparseMem(cutoff_level);
@@ -340,7 +333,7 @@ void FSTBuilder::initDenseVectors(const level_t level) {
   prefixkey_indicator_bits_.emplace_back(std::vector<word_t>());
 
   for (position_t nc = 0; nc < node_counts_[level]; nc++) {
-    for (int i = 0; i < (int) kFanout; i += kWordSize) {
+    for (int i = 0; i < (int)kFanout; i += kWordSize) {
       bitmap_labels_[level].push_back(0);
       bitmap_child_indicator_bits_[level].push_back(0);
     }
@@ -379,11 +372,10 @@ bool FSTBuilder::isStartOfNode(const level_t level,
   return readBit(louds_bits_[level], pos);
 }
 
-bool FSTBuilder::isTerminator(const level_t level,
-                              const position_t pos) const {
+bool FSTBuilder::isTerminator(const level_t level, const position_t pos) const {
   label_t label = labels_[level][pos];
   return ((label == kTerminator) &&
-      !readBit(child_indicator_bits_[level], pos));
+          !readBit(child_indicator_bits_[level], pos));
 }
 }  // namespace fst
 

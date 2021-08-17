@@ -65,12 +65,11 @@ class FST {
   //------------------------------------------------------------------
   // Input keys must be SORTED
   //------------------------------------------------------------------
-  FST(const std::vector<std::string> &keys,
-      const std::vector<uint64_t> &values) {
-    create(keys, values, kIncludeDense, kSparseDenseRatio);
+  FST(const std::vector<std::string> &keys) {
+    create(keys, kIncludeDense, kSparseDenseRatio);
   }
 
-  FST(const std::vector<uint64_t> &keys, const std::vector<uint64_t> &values) {
+  FST(const std::vector<uint64_t> &keys) {
     std::vector<std::string> transformed_keys;
     transformed_keys.reserve(keys.size());
 
@@ -79,10 +78,10 @@ class FST {
       transformed_keys.emplace_back(
           std::string(reinterpret_cast<const char *>(&endian_swapped_word), 8));
     }
-    create(transformed_keys, values, kIncludeDense, kSparseDenseRatio);
+    create(transformed_keys, kIncludeDense, kSparseDenseRatio);
   }
 
-  FST(const std::vector<uint32_t> &keys, const std::vector<uint64_t> &values) {
+  FST(const std::vector<uint32_t> &keys) {
     std::vector<std::string> transformed_keys;
     transformed_keys.reserve(keys.size());
 
@@ -91,18 +90,17 @@ class FST {
       transformed_keys.emplace_back(
           std::string(reinterpret_cast<const char *>(&endian_swapped_word), 4));
     }
-    create(transformed_keys, values, kIncludeDense, kSparseDenseRatio);
+    create(transformed_keys, kIncludeDense, kSparseDenseRatio);
   }
 
-  FST(const std::vector<std::string> &keys, const std::vector<uint64_t> &values,
-      const bool include_dense, const uint32_t sparse_dense_ratio) {
-    create(keys, values, include_dense, sparse_dense_ratio);
+  FST(const std::vector<std::string> &keys, const bool include_dense,
+      const uint32_t sparse_dense_ratio) {
+    create(keys, include_dense, sparse_dense_ratio);
   }
 
   ~FST() = default;
 
-  void create(const std::vector<std::string> &keys,
-              const std::vector<uint64_t> &values, bool include_dense,
+  void create(const std::vector<std::string> &keys, bool include_dense,
               uint32_t sparse_dense_ratio);
 
   bool lookupKey(const std::string &key, uint64_t &value) const;
@@ -133,7 +131,7 @@ class FST {
   // and the stored key prefix matches key, iter stays at this key prefix.
   FST::Iter moveToKeyGreaterThan(const std::string &key, bool inclusive) const;
 
-  FST::Iter moveToKeyLessThan(const std::string &key, bool inclusive) const;
+  FST::Iter moveToKeyLessThan(const std::string &key) const;
 
   FST::Iter moveToFirst() const;
 
@@ -179,11 +177,10 @@ class FST {
   FST::Iter end_;
 };
 
-void FST::create(const std::vector<std::string> &keys,
-                 const std::vector<uint64_t> &values, const bool include_dense,
+void FST::create(const std::vector<std::string> &keys, const bool include_dense,
                  const uint32_t sparse_dense_ratio) {
   builder_ = std::make_unique<FSTBuilder>(include_dense, sparse_dense_ratio);
-  builder_->build(keys, values);
+  builder_->build(keys);
   louds_dense_ = std::make_unique<LoudsDense>(builder_.get(), keys);
   louds_sparse_ = std::make_unique<LoudsSparse>(builder_.get(), keys);
   iter_ = FST::Iter(this);
@@ -231,7 +228,7 @@ uint64_t FST::lookupNodeNum(const char *key, uint64_t key_length) const {
   position_t node_num = 0;
   if (louds_dense_->lookupNodeNumber(key, key_length, node_num))
     if (key_length >= louds_sparse_->getStartLevel())
-      louds_sparse_->lookupNodeNumber(key, key_length, node_num);
+      louds_sparse_->lookupNodeNumber(key_length, node_num);
   return node_num;
 };
 
@@ -273,7 +270,7 @@ void FST::getNode(level_t level, size_t node_number,
                   std::vector<uint8_t> &lables, std::vector<uint64_t> &values,
                   std::vector<uint8_t> &prefixLabels) const {
   while (level < getSparseStartLevel() &&
-         !louds_dense_->nodeHasMultipleBranchesOrTerminates(node_number, level,
+         !louds_dense_->nodeHasMultipleBranchesOrTerminates(node_number,
                                                             prefixLabels)) {
     level++;
   }
@@ -281,8 +278,8 @@ void FST::getNode(level_t level, size_t node_number,
     louds_dense_->getNode(node_number, lables, values);
   } else {  // continue traversing in louds_sparse_ until node is found that is
             // a leaf or that has at least two labels
-    while (!louds_sparse_->nodeHasMultipleBranchesOrTerminates(
-        node_number, level, prefixLabels)) {
+    while (!louds_sparse_->nodeHasMultipleBranchesOrTerminates(node_number,
+                                                               prefixLabels)) {
       level++;
     }
     // get node from louds_sparse_
@@ -314,8 +311,7 @@ FST::Iter FST::moveToKeyGreaterThan(const std::string &key,
   return iter;
 }
 
-FST::Iter FST::moveToKeyLessThan(const std::string &key,
-                                 const bool inclusive) const {
+FST::Iter FST::moveToKeyLessThan(const std::string &key) const {
   FST::Iter iter = moveToKeyGreaterThan(key, false);
   if (!iter.isValid()) {
     iter = moveToLast();
@@ -370,12 +366,13 @@ std::pair<FST::Iter, FST::Iter> FST::lookupRange(const std::string &left_key,
   // there exists one
   if (right_inclusive) {
     if (end_iter.isValid()) {
-      // move the iterator only in the case that right_key has been found
-      auto tid = end_iter.getValue();
-      // todo there is no reference to keys vector anymore
+      // // move the iterator only in the case that right_key has been found
+      // auto tid = end_iter.getValue();
+      //
+      // // TODO there is no reference to keys vector anymore
       // if ((*keys_)[tid] == right_key) {
       //  end_iter++;
-      //}
+      // }
     }
   }
 
