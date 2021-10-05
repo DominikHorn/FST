@@ -1,11 +1,12 @@
 #ifndef INTERLEAVED_RANK_H_
 #define INTERLEAVED_RANK_H_
 
+#include <bitset>
 #include <cassert>
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <vector>
-#include <bitset>
 
 #include "popcount.h"
 #include "rank.hpp"
@@ -16,9 +17,9 @@ class InterleavedBitvectorRank {
  public:
   InterleavedBitvectorRank() : basic_block_size_(0), rank_lut_(nullptr){};
 
-  InterleavedBitvectorRank(const position_t basic_block_size, const BitvectorRank *labels,
-                           const BitvectorRank *children, const level_t start_level = 0,
-                           const level_t end_level = 0 /* non-inclusive */) {
+  InterleavedBitvectorRank(const position_t basic_block_size,
+                           const BitvectorRank *labels,
+                           const BitvectorRank *children) {
     basic_block_size_ = basic_block_size;
     initBitmaps(labels, children);
     initRankLut(labels, children);
@@ -30,7 +31,7 @@ class InterleavedBitvectorRank {
   }
 
   void print_bitset(std::bitset<64> b) {
-    for (int i = 0; i < b.size(); i++) {
+    for (size_t i = 0; i < b.size(); i++) {
       std::cout << b[i];
       if (i % 8 == 0 && i > 0) std::cout << " ";
     }
@@ -41,10 +42,12 @@ class InterleavedBitvectorRank {
     for (int i = 0; i < 8; i++) {
       std::bitset<64> b(bits_[i]);
       print_bitset(b);
-      std::cout << " " << (i % 2 == 0 ? "<-- Labels" : "<-- Children") << std::endl;
+      std::cout << " " << (i % 2 == 0 ? "<-- Labels" : "<-- Children")
+                << std::endl;
     }
     for (int i = 0; i < 4; i++) {
-      std::cout << rank_lut_[i] << (i % 2 == 0 ? "<-- Labels" : "<-- Children") << std::endl;
+      std::cout << rank_lut_[i] << (i % 2 == 0 ? "<-- Labels" : "<-- Children")
+                << std::endl;
     }
   }
 
@@ -69,9 +72,12 @@ class InterleavedBitvectorRank {
   position_t rankLabel(position_t pos) const {
     assert(pos < num_bits_);
     position_t word_per_basic_block = basic_block_size_ / kWordSize;
-    position_t block_id = (pos / basic_block_size_) << 1;  // as we store it interleaved
+    position_t block_id = (pos / basic_block_size_)
+                          << 1;  // as we store it interleaved
     position_t offset = pos & (basic_block_size_ - 1);
-    return (rank_lut_[block_id] + popcountLinearInterleaved(bits_, block_id * word_per_basic_block, offset + 1));
+    return (rank_lut_[block_id] +
+            popcountLinearInterleaved(bits_, block_id * word_per_basic_block,
+                                      offset + 1));
   }
 
   position_t rankChild(position_t pos) const {
@@ -79,27 +85,37 @@ class InterleavedBitvectorRank {
     position_t word_per_basic_block = basic_block_size_ / kWordSize;
     position_t block_id = ((pos / basic_block_size_) << 1);
     position_t offset = pos & (basic_block_size_ - 1);
-    return (rank_lut_[block_id + 1] + popcountLinearInterleavedOdds(bits_, block_id * word_per_basic_block, offset + 1));
+    return (rank_lut_[block_id + 1] +
+            popcountLinearInterleavedOdds(
+                bits_, block_id * word_per_basic_block, offset + 1));
   }
 
   position_t rankCombined(position_t pos) const {
     assert(pos < num_bits_);
     position_t word_per_basic_block = basic_block_size_ / kWordSize;
-    position_t block_id = (pos / basic_block_size_) << 1;  // as we store it interleaved
+    position_t block_id = (pos / basic_block_size_)
+                          << 1;  // as we store it interleaved
     position_t offset = pos & (basic_block_size_ - 1);
     position_t rank_result = rank_lut_[block_id] - rank_lut_[block_id + 1];
-    return (rank_result + popcountLinearInterleavedCombined(bits_, block_id * word_per_basic_block, offset + 1));
+    return (rank_result +
+            popcountLinearInterleavedCombined(
+                bits_, block_id * word_per_basic_block, offset + 1));
   }
 
-  position_t rankLutSize() const { return ((num_bits_ / basic_block_size_ + 1) * sizeof(position_t)); }
+  position_t rankLutSize() const {
+    return ((num_bits_ / basic_block_size_ + 1) * sizeof(position_t));
+  }
 
   position_t serializedSize() const {
-    position_t size = sizeof(num_bits_) + sizeof(basic_block_size_) + bitsSize() + rankLutSize();
+    position_t size = sizeof(num_bits_) + sizeof(basic_block_size_) +
+                      bitsSize() + rankLutSize();
     sizeAlign(size);
     return size;
   }
 
-  position_t size() const { return (sizeof(InterleavedBitvectorRank) + bitsSize() + rankLutSize()); }
+  position_t size() const {
+    return (sizeof(InterleavedBitvectorRank) + bitsSize() + rankLutSize());
+  }
 
   void prefetch(position_t pos) const {
     __builtin_prefetch(bits_ + (pos / kWordSize));
@@ -122,11 +138,14 @@ class InterleavedBitvectorRank {
     auto bv_rank = std::make_unique<InterleavedBitvectorRank>();
     memcpy(&(bv_rank->num_bits_), src, sizeof(bv_rank->num_bits_));
     src += sizeof(bv_rank->num_bits_);
-    memcpy(&(bv_rank->basic_block_size_), src, sizeof(bv_rank->basic_block_size_));
+    memcpy(&(bv_rank->basic_block_size_), src,
+           sizeof(bv_rank->basic_block_size_));
     src += sizeof(bv_rank->basic_block_size_);
-    bv_rank->bits_ = const_cast<word_t *>(reinterpret_cast<const word_t *>(src));
+    bv_rank->bits_ =
+        const_cast<word_t *>(reinterpret_cast<const word_t *>(src));
     src += bv_rank->bitsSize();
-    bv_rank->rank_lut_ = const_cast<position_t *>(reinterpret_cast<const position_t *>(src));
+    bv_rank->rank_lut_ =
+        const_cast<position_t *>(reinterpret_cast<const position_t *>(src));
     src += bv_rank->rankLutSize();
     align(src);
     return bv_rank;
@@ -156,7 +175,9 @@ class InterleavedBitvectorRank {
   }
 
   void initRankLut(const BitvectorRank *labels, const BitvectorRank *child) {
-    position_t num_blocks = num_bits_ / basic_block_size_ + 1;  // works as we set num_bits_ before call this function
+    position_t num_blocks =
+        num_bits_ / basic_block_size_ +
+        1;  // works as we set num_bits_ before call this function
     rank_lut_ = new position_t[num_blocks];
 
     for (position_t i = 0; i < num_blocks / 2; i++) {
