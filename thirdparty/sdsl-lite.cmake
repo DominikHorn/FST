@@ -2,7 +2,7 @@ include(ExternalProject)
 find_package(Git REQUIRED)
 
 # library name
-set(SDSL_LIBRARY sdsl-lite)
+set(SDSL_LIBRARY fst-sdsl-lite)
 
 ExternalProject_Add(
         ${SDSL_LIBRARY}_src
