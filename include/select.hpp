@@ -8,7 +8,7 @@
 #include "config.hpp"
 #include "popcount.h"
 
-namespace fst {
+namespace mmphf_fst {
 
 class BitvectorSelect : public Bitvector {
  public:
@@ -152,6 +152,6 @@ class BitvectorSelect : public Bitvector {
   position_t *select_lut_{};  // select look-up table
 };
 
-}  // namespace fst
+}  // namespace mmphf_fst
 
 #endif  // SELECT_H_

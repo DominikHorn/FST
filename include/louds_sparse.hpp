@@ -9,7 +9,7 @@
 #include "rank.hpp"
 #include "select.hpp"
 
-namespace fst {
+namespace mmphf_fst {
 
 class LoudsSparse {
  public:
@@ -683,6 +683,6 @@ void LoudsSparse::Iter::operator--(int) {
   set(key_len_ - 1, pos);
   return moveToRightMostKey();
 }
-}  // namespace fst
+}  // namespace mmphf_fst
 
 #endif  // LOUDSSPARSE_H_

@@ -2,19 +2,21 @@
 #define LABELVECTOR_H_
 
 #include <emmintrin.h>
+
 #include <vector>
 
 #include "config.hpp"
 
-namespace fst {
+namespace mmphf_fst {
 
 class LabelVector {
  public:
   LabelVector() : num_bytes_(0), labels_(nullptr){};
 
-  explicit LabelVector(const std::vector<std::vector<label_t> > &labels_per_level,
-              const level_t start_level = 0,
-              level_t end_level = 0 /* non-inclusive */) {
+  explicit LabelVector(
+      const std::vector<std::vector<label_t> > &labels_per_level,
+      const level_t start_level = 0,
+      level_t end_level = 0 /* non-inclusive */) {
     if (end_level == 0) end_level = labels_per_level.size();
 
     num_bytes_ = 1;
@@ -32,9 +34,7 @@ class LabelVector {
     }
   }
 
-  ~LabelVector() {
-    delete[] labels_;
-  }
+  ~LabelVector() { delete[] labels_; }
 
   position_t getNumBytes() const { return num_bytes_; }
 
@@ -83,9 +83,7 @@ class LabelVector {
     return lv;
   }
 
-  void destroy() {
-
-  }
+  void destroy() {}
 
  private:
   position_t num_bytes_;
@@ -144,7 +142,7 @@ bool LabelVector::simdSearch(const label_t target, position_t &pos,
   // CA: todo fix invalid read
   position_t num_labels_searched = 0;
   position_t num_labels_left = search_len;
-  while ((num_labels_left >> 4) > 0) { // while at least 16 elements remain
+  while ((num_labels_left >> 4) > 0) {  // while at least 16 elements remain
     label_t *start_ptr = labels_ + pos + num_labels_searched;
     __m128i cmp =
         _mm_cmpeq_epi8(_mm_set1_epi8(target),
@@ -222,6 +220,6 @@ bool LabelVector::linearSearchGreaterThan(const label_t target, position_t &pos,
   return false;
 }
 
-}  // namespace fst
+}  // namespace mmphf_fst
 
 #endif  // LABELVECTOR_H_

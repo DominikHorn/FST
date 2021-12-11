@@ -3,7 +3,7 @@
 
 #include <string>
 
-namespace fst {
+namespace mmphf_fst {
 
 //******************************************************
 // HASH FUNCTION FROM LEVELDB
@@ -53,6 +53,6 @@ inline uint32_t suffixHash(const char *key, const int keylen) {
   return Hash(key, keylen, 0xbc9f1d34);
 }
 
-}  // namespace fst
+}  // namespace mmphf_fst
 
 #endif  // HASH_H_

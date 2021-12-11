@@ -9,4 +9,4 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 
 # ==== executable target for testing whether the library builds ====
 add_executable(is_building_test main.cpp)
-target_link_libraries(is_building_test PRIVATE fst)
+target_link_libraries(is_building_test PRIVATE mmphf_fst)

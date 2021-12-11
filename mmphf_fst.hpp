@@ -10,7 +10,7 @@
 #include "include/louds_dense.hpp"
 #include "include/louds_sparse.hpp"
 
-namespace fst {
+namespace mmphf_fst {
 
 class FST {
  public:
@@ -509,6 +509,6 @@ bool FST::Iter::operator!=(const FST::Iter &other) {
   return this->sparse_iter_.getLastIteratorPosition() !=
          other.sparse_iter_.getLastIteratorPosition();
 }
-}  // namespace fst
+}  // namespace mmphf_fst
 
 #endif  // SURF_H

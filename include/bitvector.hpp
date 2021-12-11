@@ -6,7 +6,7 @@
 
 #include "config.hpp"
 
-namespace fst {
+namespace mmphf_fst {
 
 class Bitvector {
  public:
@@ -178,6 +178,6 @@ void Bitvector::concatenateBitvectors(
   }
 }
 
-}  // namespace fst
+}  // namespace mmphf_fst
 
 #endif  // BITVECTOR_H_

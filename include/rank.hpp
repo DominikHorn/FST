@@ -2,18 +2,18 @@
 #define RANK_H_
 
 #include <cassert>
-#include <vector>
-#include <stdexcept>
 #include <memory>
+#include <stdexcept>
+#include <vector>
 
 #include "bitvector.hpp"
 #include "popcount.h"
 
-namespace fst {
+namespace mmphf_fst {
 
 class BitvectorRank : public Bitvector {
  public:
-  BitvectorRank() : basic_block_size_(0), rank_lut_(nullptr) {};
+  BitvectorRank() : basic_block_size_(0), rank_lut_(nullptr){};
 
   BitvectorRank(const position_t basic_block_size,
                 const std::vector<std::vector<word_t> > &bitvector_per_level,
@@ -40,7 +40,7 @@ class BitvectorRank : public Bitvector {
     position_t block_id = pos / basic_block_size_;
     position_t offset = pos & (basic_block_size_ - 1);
     return (rank_lut_[block_id] +
-        popcountLinear(bits_, block_id * word_per_basic_block, offset + 1));
+            popcountLinear(bits_, block_id * word_per_basic_block, offset + 1));
   }
 
   position_t rankLutSize() const {
@@ -49,7 +49,7 @@ class BitvectorRank : public Bitvector {
 
   position_t serializedSize() const {
     position_t size = sizeof(num_bits_) + sizeof(basic_block_size_) +
-        bitsSize() + rankLutSize();
+                      bitsSize() + rankLutSize();
     sizeAlign(size);
     return size;
   }
@@ -111,6 +111,6 @@ class BitvectorRank : public Bitvector {
   position_t *rank_lut_{};  // rank look-up table
 };
 
-}  // namespace fst
+}  // namespace mmphf_fst
 
 #endif  // RANK_H_

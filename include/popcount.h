@@ -3,10 +3,11 @@
 #define _FASTRANK_POPCOUNT_H_
 
 #include <sys/types.h>
+
 #include <cstdint>
 #include <cstdio>
 
-namespace fst {
+namespace mmphf_fst {
 
 #define L8 0x0101010101010101ULL  // Every lowest 8th bit set: 00000001...
 #define G2 0xAAAAAAAAAAAAAAAAULL  // Every highest 2nd bit: 101010...
@@ -190,6 +191,6 @@ inline uint64_t selectLinear(uint64_t *bits, uint64_t length, uint64_t x,
   return i * 64 + select64(bits[x + i], k);
 }
 
-}  // namespace fst
+}  // namespace mmphf_fst
 
 #endif /* _FASTRANK_POPCOUNT_H_ */

@@ -7,7 +7,7 @@
 #include "fst_builder.hpp"
 #include "rank.hpp"
 
-namespace fst {
+namespace mmphf_fst {
 
 class LoudsDense {
  public:
@@ -705,6 +705,6 @@ void LoudsDense::Iter::operator--(int) {
   set(key_len_ - 1, prev_pos);
   return moveToRightMostKey();
 }
-}  // namespace fst
+}  // namespace mmphf_fst
 
 #endif  // LOUDSDENSE_H_

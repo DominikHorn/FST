@@ -8,7 +8,7 @@
 #include "config.hpp"
 #include "hash.hpp"
 
-namespace fst {
+namespace mmphf_fst {
 
 class FSTBuilder {
  public:
@@ -377,6 +377,6 @@ bool FSTBuilder::isTerminator(const level_t level, const position_t pos) const {
   return ((label == kTerminator) &&
           !readBit(child_indicator_bits_[level], pos));
 }
-}  // namespace fst
+}  // namespace mmphf_fst
 
 #endif  // FSTBUILDER_H_
